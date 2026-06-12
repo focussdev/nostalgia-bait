@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spin & Tier</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0f0f12;
+    --bg2:       #1a1a20;
+    --bg3:       #242430;
+    --border:    rgba(255,255,255,0.10);
+    --border2:   rgba(255,255,255,0.18);
+    --text:      #f0f0f4;
+    --text2:     #ffffff;
+    --text3:     #c4c4ff;
+    --radius:    12px;
+    --radius-sm: 8px;
+    --font:      system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem 4rem;
+    overflow: hidden;
+  }
+
+  #app { width: 100%; max-width: 520px; transition: max-width 0.35s ease; position: relative; overflow: hidden; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  @keyframes screenSlideOutLeft {
+    from { transform: translateX(0);     opacity: 1; }
+    to   { transform: translateX(-32px); opacity: 0; }
+  }
+  @keyframes screenSlideInRight {
+    from { transform: translateX(32px);  opacity: 0; }
+    to   { transform: translateX(0);     opacity: 1; }
+  }
+  .screen.leaving {
+    display: block !important;
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    pointer-events: none;
+    z-index: 0;
+    animation: screenSlideOutLeft 0.22s ease forwards;
+  }
+  .screen.entering {
+    position: relative;
+    z-index: 1;
+    animation: screenSlideInRight 0.22s ease forwards;
+  }
+
+  /* ── WHEEL SCREEN ── */
+  #wheel-screen { text-align: center; }
+
+  .screen-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .screen-sub {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 2rem;
+  }
+
+  #wheel-wrap {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 1.75rem;
+  }
+
+  #wheel-canvas {
+    display: block;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px var(--bg3), 0 0 0 5px var(--border2);
+  }
+
+  /* pointer arrow pointing RIGHT into the wheel */
+  #pointer {
+    position: absolute;
+    top: 50%;
+    right: -22px;
+    transform: translateY(-50%);
+    width: 0; height: 0;
+    border-top:    12px solid transparent;
+    border-bottom: 12px solid transparent;
+    border-right:  24px solid #fff;
+    filter: drop-shadow(0 0 4px rgba(255,255,255,0.4));
+  }
+
+  #spin-btn {
+    padding: 12px 44px;
+    font-size: 16px;
+    font-weight: 600;
+    border: 1.5px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--bg2);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s, border-color 0.2s, color 0.2s;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  #spin-btn:hover  { background: var(--bg3); }
+  #spin-btn:active { transform: scale(0.97); }
+  #spin-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  #spin-btn.veto-mode { border-color: #f4a261; color: #f4a261; }
+  #spin-btn.veto-mode:hover { background: rgba(244, 163, 97, 0.151); }
+  #spin-btn-sub { font-size: 10px; font-weight: 400; opacity: 0.75; letter-spacing: 0.03em; }
+
+  @keyframes resultColorCycle {
+    0%   { color: #f0f0f4; }
+    20%  { color: #ffd6a5; }
+    40%  { color: #caffbf; }
+    60%  { color: #bde0fe; }
+    80%  { color: #e2d9f3; }
+    100% { color: #f0f0f4; }
+  }
+
+  #spin-result {
+    margin-top: 1rem;
+    font-size: 25px;
+    font-style: bold;
+    color: var(--text2);
+    min-height: 22px;
+    animation: resultColorCycle 5s ease-in-out infinite;
+    text-shadow:
+      0 0 6px  rgba(255,255,255,0.9),
+      0 0 18px rgba(255,255,255,0.6),
+      0 0 40px rgba(255,255,255,0.3);
+  }
+
+  /* ── TASK SCREEN ── */
+  #task-screen { text-align: center; padding-top: 1.5rem; }
+
+  #task-timer-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 2rem;
+  }
+  #task-timer {
+    font-size: 52px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.03em;
+    color: var(--text2);
+    line-height: 1;
+  }
+  #task-timer-pause {
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text3);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+    font-family: var(--font);
+  }
+  #task-timer-pause:hover { background: var(--bg2); color: var(--text); }
+
+  #task-item-name {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+  }
+
+  #task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 2rem;
+    text-align: left;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+    user-select: none;
+  }
+  .task-item:hover { background: var(--bg3); border-color: var(--border2); }
+  .task-item input[type=checkbox] {
+    width: 18px; height: 18px;
+    accent-color: #2a9d8f;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .task-item span { font-size: 14px; font-weight: 500; line-height: 1.4; }
+  .task-item.done { opacity: 0.5; text-decoration: line-through; }
+
+  #task-continue-btn {
+    padding: 11px 36px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1.5px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--bg2);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+    font-family: var(--font);
+  }
+  #task-continue-btn:hover:not(:disabled) { background: var(--bg3); }
+  #task-continue-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* ── THEME ANNOUNCE SCREEN ── */
+  #theme-screen { text-align: center; padding-top: 2rem; }
+
+  .announce-item {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .by-label {
+    font-size: 12px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  .theme-pill {
+    display: inline-block;
+    padding: 8px 22px;
+    border-radius: 50px;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 2.5rem;
+    transition: background 0.08s, color 0.08s;
+    min-width: 160px;
+  }
+
+  .action-btn {
+    padding: 11px 36px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1.5px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--bg2);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .action-btn:hover { background: var(--bg3); }
+
+  /* ── TIER LIST SCREEN ── */
+  #tier-screen {
+    padding-top: 0.25rem;
+    flex-direction: column;
+    max-height: var(--app-max-h, 700px);
+    overflow: hidden;
+  }
+  #tier-screen.active { display: flex; }
+
+  #tier-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-bottom: 1rem;
+    flex-shrink: 0;
+  }
+
+  #tier-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.15) transparent;
+  }
+  #tier-scroll::-webkit-scrollbar { width: 4px; }
+  #tier-scroll::-webkit-scrollbar-track { background: transparent; }
+  #tier-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 2px; }
+
+  /* pending tray */
+  #pending-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+  #pending-tray {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 50px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    border: 1.5px dashed var(--border2);
+    background: var(--bg2);
+    margin-bottom: 1rem;
+  }
+  #pending-tray.drag-over { border-color: #fff; background: var(--bg3); }
+
+  /* tier rows */
+  #tiers-wrap { display: flex; flex-direction: column; gap: 5px; margin-bottom: 0.5rem; }
+
+  .tier-row {
+    display: flex;
+    align-items: stretch;
+    min-height: 54px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 0.5px solid var(--border);
+  }
+
+  .tier-lbl {
+    width: 50px;
+    min-width: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .tier-drop {
+    flex: 1;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    background: var(--bg2);
+    min-height: 54px;
+    overflow-x: auto;
+    transition: background 0.12s;
+  }
+  .tier-drop.drag-over { background: var(--bg3); border-left: 2px solid #fff; }
+
+  /* chips */
+  .item-chip {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: grab;
+    border: 0.5px solid var(--border2);
+    background: var(--bg3);
+    color: var(--text);
+    user-select: none;
+    transition: opacity 0.1s, transform 0.1s;
+  }
+  .item-chip:active { transform: scale(0.96); }
+  .item-chip.dragging { opacity: 0.35; }
+  .chip-text { display: flex; flex-direction: column; align-items: flex-start; }
+  .chip-theme {
+    max-width: 150px;
+    word-wrap: break-word;
+    font-size: 10px;
+    color: var(--text3);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+  .item-chip.has-img .chip-theme { color: rgba(255,255,255,0.7); }
+  .item-chip.has-img { text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+
+  /* next spin button */
+  #next-btn {
+    width: 100%;
+    padding: 11px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1.5px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--bg2);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  #next-btn:hover { background: var(--bg3); }
+
+  /* ── FINISH SCREEN ── */
+  #finish-screen { padding-top: 0.5rem; }
+  #finish-header { text-align: center; margin-bottom: 1.5rem; }
+  #finish-title { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+  #finish-sub { font-size: 13px; color: var(--text3); }
+  #finish-tiers { display: flex; flex-direction: column; gap: 5px; margin-bottom: 1.25rem; }
+  .finish-tier-row {
+    display: flex; align-items: stretch; min-height: 44px;
+    border-radius: var(--radius-sm); overflow: hidden; border: 0.5px solid var(--border);
+  }
+  .finish-tier-lbl {
+    width: 50px; min-width: 50px; display: flex; align-items: center;
+    justify-content: center; font-size: 18px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .finish-tier-items {
+    flex: 1; display: flex; flex-wrap: wrap; align-items: center;
+    gap: 6px; padding: 8px 10px; background: var(--bg2);
+  }
+  #finish-actions { display: flex; gap: 8px; margin-top: 1rem; }
+  #finish-actions .action-btn { flex: 1; }
+
+  /* ── SAVE CONTROLS ── */
+  #save-controls {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .save-btn {
+    padding: 5px 14px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text3);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+    font-family: var(--font);
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .save-btn:hover { background: var(--bg2); color: var(--text); }
+  #resume-btn { color: var(--text); border-color: var(--border2); }
+
+  /* ── BACKGROUND OVERLAY (item image + vignette, theme screen) ── */
+  #bg-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #fff;
+    color: #111;
+    padding: 10px 22px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 999;
+  }
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ── WHEEL ── -->
+  <div id="wheel-screen" class="screen active">
+    <p class="screen-title">Spin The Wheel</p>
+    <p class="screen-sub" id="wheel-sub">Pick an item and see where it lands</p>
+    <div id="wheel-wrap">
+      <canvas id="wheel-canvas" width="480" height="480"></canvas>
+      <div id="pointer"></div>
+    </div>
+    <br>
+    <button id="spin-btn"><span id="spin-btn-label">SPIN!</span><span id="spin-btn-sub"></span></button>
+    <div id="spin-result"></div>
+    <button id="to-theme-btn" class="action-btn" style="display:none;margin-top:1rem">Continue →</button>
+    <div id="save-controls">
+      <button class="save-btn" id="resume-btn" style="display:none">▶ Resume session</button>
+      <button class="save-btn" id="save-link-btn">Link save file</button>
+    </div>
+  </div>
+
+  <!-- ── TASK ── -->
+  <div id="task-screen" class="screen">
+    <div id="task-timer-wrap">
+      <div id="task-timer">0:00:00</div>
+      <button id="task-timer-pause">Pause</button>
+    </div>
+    <div id="task-item-name"></div>
+    <div id="task-list"></div>
+    <button id="task-continue-btn" disabled>Continue →</button>
+  </div>
+
+  <!-- ── THEME ANNOUNCE ── -->
+  <div id="theme-screen" class="screen">
+    <p class="screen-title" style="margin-bottom:1.5rem">Rolling theme for...</p>
+    <div class="announce-item" id="announce-item"></div>
+    <div class="by-label">Theme</div>
+    <div class="theme-pill" id="announce-theme"></div>
+    <br>
+    <button class="action-btn" id="go-tier-btn">Continue →</button>
+  </div>
+
+  <!-- ── TIER LIST ── -->
+  <div id="tier-screen" class="screen">
+    <div id="tier-header">
+      <p class="screen-title">Tier List</p>
+    </div>
+    <div id="tier-scroll">
+      <div>
+        <div id="pending-label">Holding Area</div>
+        <div id="pending-tray"></div>
+      </div>
+      <div id="tiers-wrap"></div>
+    </div>
+    <button id="next-btn" style="flex-shrink:0;margin-top:1.25rem">Next Round</button>
+  </div>
+
+  <div id="finish-screen" class="screen">
+    <div id="finish-header">
+      <div id="finish-title">All Done!</div>
+      <div id="finish-sub"></div>
+    </div>
+    <div id="finish-tiers"></div>
+    <div id="finish-actions">
+      <button id="restart-btn" class="action-btn">Play Again</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="bg-overlay"></div>
+<div id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+//  SOUNDS  (drop your files here)
+// ─────────────────────────────────────────────
+const SOUND_TICK  = "sounds/tick.mp3";   // wheel segment tick + theme cycle
+const SOUND_LAND  = "sounds/land.mp3";   // wheel stops on item
+const SOUND_THEME = "sounds/theme.mp3";  // theme reveal lands
+const SOUND_PLACE = "sounds/place.mp3";  // item placed in tier
+
+function loadSfx(src) {
+  const a = new Audio(src);
+  a.load();
+  return a;
+}
+
+const sfxTick  = loadSfx(SOUND_TICK);
+const sfxLand  = loadSfx(SOUND_LAND);
+const sfxTheme = loadSfx(SOUND_THEME);
+const sfxPlace = loadSfx(SOUND_PLACE);
+
+function playSfx(sfx, volume = 0.5) {
+  const clone = sfx.cloneNode();
+  clone.volume = Math.min(1, Math.max(0, volume));
+  clone.play().catch(() => {});
+}
+
+// ─────────────────────────────────────────────
+//  DATA
+// ─────────────────────────────────────────────
+const ITEMS = [
+  "Sudeki",
+  "Neighbours from Hell",
+  "Kao the Kangaroo",
+  "Mr Jones Graveyard Shift",
+  "Creatures Village",
+  "PoP Sands of Time",
+  "Hitman Blood Money",
+  "Last Stand",
+  "Harvester",
+  "NFS Most Wanted",
+  "Silverfall",
+  "Star Wars Dark Forces"
+];
+
+const THEMES = [
+  "At 5:45 before work",
+  "For speedrunning",
+  "When zonked",
+  "When shitfaced",
+  "As the last game on a deserted island",
+  "Played on a Pentium 8 using a CRT monitor at 12 fps",
+  "As a competitive E-Sport with a price pool of more than 200 million dollars",
+  "After playing for 48 hours straight",
+  "Subject of an 8 hour YouTube video essay",
+  "Gambling",
+  "How much it reminds me of that one time I threw my friends rubber eraser out of a driving shool bus window",
+  "My actual enjoyment of the video game (but tiers are reverse)",
+  "but if every character was family guy",
+  "As a streaming game",
+  "Definitely from 2006",
+  "Better or worse than as a kid",
+  "I wish they would make games like this nowadays",
+  "How important to my general life",
+  "Will think about daily for the next 2 weeks",
+  "just do whatever man i dont care anymore",
+  "The game moves up 1 tier per minute of technical difficulties",
+  "Would burn case or throw it into the sea",
+  "Bargain Bin Game",
+  "but the protagonist keeps saying 'gyahoo'",
+  "do i think jerma would like this game",
+  "among us fornite",
+  "just play morrowind instead",
+  "gurf",
+  "+1 tier for every frog seen, heard, or mentioned"
+];
+
+const TIERS = [
+  { label: "S", color: "#E8564A" },
+  { label: "A", color: "#F0943A" },
+  { label: "B", color: "#F5C842" },
+  { label: "C", color: "#5cb85c" },
+  { label: "D", color: "#4E9BDB" },
+  { label: "F", color: "#9B6EE0" },
+];
+
+const TASKS = [
+  "Play for at least 1 hour",
+];
+
+// One random task is picked from this list each round (if non-empty)
+const TASKS_RANDOM = [
+  "do 10 backflips",
+  "play an additional hour",
+  "make TTS cost a single point while playing",
+];
+
+// Images: drop files named after items into this folder (e.g. "images/Pizza.jpg")
+const IMAGE_FOLDER = "images";
+const IMAGE_EXTS   = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
+
+// ─────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────
+let remaining    = [];   // items left to spin
+let selectedItem = null;
+let currentTheme = null;
+let spinCount    = 0;
+let placedItems  = {};   // { itemName: { tier, theme } }
+let tierContents = TIERS.map(() => []); // items in each tier row
+let ITEM_IMAGES         = {};   // { itemName: dataURL } — for save/future upload UI
+const ITEM_IMAGE_ELEMENTS = {};  // { itemName: HTMLImageElement } — loaded from images/ folder
+let wheelAngle   = 0;
+let spinning     = false;
+let spinVel      = 0;
+let rafId        = null;
+let vetosRemaining = 3; // resets to maxVetoes at start of each fresh spin
+let themesDeck   = []; // shuffled deck; dealt one per spin, reshuffled when empty
+let timerSeconds     = 0;
+let timerRunning     = false;
+let timerInterval    = null;
+let currentRandomTask = null;
+let taskChecked      = [];
+let _restoredScreen  = 'wheel-screen';
+
+// ─────────────────────────────────────────────
+//  HELPERS
+// ─────────────────────────────────────────────
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function randomThemeColor() {
+  const palettes = [
+    ["#ffd6e7","#c9184a"], ["#caffbf","#1b5e20"],
+    ["#bde0fe","#023e8a"], ["#ffd6a5","#7c3e00"],
+    ["#e2d9f3","#4a235a"], ["#d0f4de","#1b4332"],
+  ];
+  return palettes[Math.floor(Math.random() * palettes.length)];
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2000);
+}
+
+function showScreen(id) {
+  if (id !== 'task-screen') {
+    clearInterval(timerInterval);
+    timerRunning = false;
+  }
+
+  // clean up any previous mid-transition leftovers
+  document.querySelectorAll('.screen.leaving').forEach(s => s.classList.remove('leaving'));
+  document.querySelectorAll('.screen.entering').forEach(s => s.classList.remove('entering'));
+
+  const prev = document.querySelector('.screen.active');
+  const next = document.getElementById(id);
+
+  if (!prev || prev === next) {
+    if (prev) prev.classList.remove('active');
+    next.classList.add('active');
+    applyZoom();
+    return;
+  }
+
+  prev.classList.remove('active');
+  prev.classList.add('leaving');
+  next.classList.add('active', 'entering');
+
+  applyZoom();
+
+  setTimeout(() => {
+    prev.classList.remove('leaving');
+    next.classList.remove('entering');
+  }, 240);
+}
+
+function resetRemaining() {
+  remaining = shuffle([...ITEMS]);
+}
+
+function resetThemesDeck() {
+  themesDeck = shuffle([...THEMES]);
+}
+
+async function preloadImages() {
+  await Promise.all(ITEMS.map(name => new Promise(done => {
+    if (ITEM_IMAGE_ELEMENTS[name]) return done();
+    let i = 0;
+    function tryNext() {
+      if (i >= IMAGE_EXTS.length) return done();
+      const img = new Image();
+      img.onload  = () => { ITEM_IMAGE_ELEMENTS[name] = img; done(); };
+      img.onerror = () => { i++; tryNext(); };
+      img.src = `${IMAGE_FOLDER}/${name}${IMAGE_EXTS[i]}`;
+    }
+    tryNext();
+  })));
+}
+
+function updateWheelSub() {
+  const rated = Object.keys(placedItems).length;
+  document.getElementById('wheel-sub').textContent =
+    spinCount > 0 ? `Round ${spinCount + 1} · ${rated} item${rated !== 1 ? 's' : ''} rated`
+                  : 'Pick an item and see where it lands';
+}
+
+// ─────────────────────────────────────────────
+//  SAVE / LOAD  (File System Access API → localStorage fallback)
+// ─────────────────────────────────────────────
+
+// ── IndexedDB helpers (store the file handle across reloads) ──
+function idbOpen() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open('spin-tier', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('kv');
+    req.onsuccess = e => res(e.target.result);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+async function idbGet(key) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const req = db.transaction('kv').objectStore('kv').get(key);
+    req.onsuccess = () => res(req.result ?? null);
+    req.onerror   = () => rej(req.error);
+  });
+}
+async function idbSet(key, val) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('kv', 'readwrite');
+    tx.objectStore('kv').put(val, key);
+    tx.oncomplete = res;
+    tx.onerror    = () => rej(tx.error);
+  });
+}
+
+// ── Serialise / apply ──
+function getSaveData() {
+  return {
+    version:   1,
+    items:     [...ITEMS],
+    themes:    [...THEMES],
+    tiers:     TIERS.map(t => ({...t})),
+    images:    {...ITEM_IMAGES},
+    state: {
+      currentScreen:    document.querySelector('.screen.active')?.id ?? 'wheel-screen',
+      selectedItem,
+      currentTheme,
+      timerSeconds,
+      currentRandomTask,
+      taskChecked:      [...taskChecked],
+      placedItems:      {...placedItems},
+      tierContents:     tierContents.map(row => [...row]),
+      spinCount,
+      vetosRemaining,
+      remaining:        [...remaining],
+      themesDeck:       [...themesDeck]
+    }
+  };
+}
+
+function applySave(save) {
+  if (!save || save.version !== 1) return false;
+  ITEMS.splice(0, Infinity, ...save.items);
+  THEMES.splice(0, Infinity, ...save.themes);
+  TIERS.splice(0, Infinity, ...save.tiers);
+  Object.keys(ITEM_IMAGES).forEach(k => delete ITEM_IMAGES[k]);
+  if (save.images) Object.assign(ITEM_IMAGES, save.images);
+  Object.keys(placedItems).forEach(k => delete placedItems[k]);
+  Object.assign(placedItems, save.state.placedItems);
+  tierContents.splice(0, Infinity, ...save.state.tierContents.map(row => [...row]));
+  spinCount         = save.state.spinCount;
+  remaining         = [...save.state.remaining];
+  themesDeck        = save.state.themesDeck ? [...save.state.themesDeck] : shuffle([...THEMES]);
+  selectedItem      = save.state.selectedItem ?? null;
+  currentTheme      = save.state.currentTheme ?? null;
+  timerSeconds      = save.state.timerSeconds ?? 0;
+  currentRandomTask = save.state.currentRandomTask ?? null;
+  taskChecked       = save.state.taskChecked ? [...save.state.taskChecked] : [];
+  vetosRemaining    = save.state.vetosRemaining ?? 1;
+  // restore task/finish/wheel faithfully; tier+theme fall back to wheel
+  const saved = save.state.currentScreen ?? 'wheel-screen';
+  _restoredScreen = ['task-screen', 'finish-screen', 'wheel-screen'].includes(saved)
+    ? saved : 'wheel-screen';
+  return true;
+}
+
+// ── File handle ──
+let _fileHandle = null;
+
+async function writeToHandle() {
+  if (!_fileHandle) return;
+  try {
+    const perm = await _fileHandle.queryPermission({mode: 'readwrite'});
+    if (perm !== 'granted') return;
+    const w = await _fileHandle.createWritable();
+    await w.write(JSON.stringify(getSaveData(), null, 2));
+    await w.close();
+  } catch(e) {}
+}
+
+async function autoSave() {
+  if (_fileHandle) {
+    await writeToHandle();
+  } else {
+    try { localStorage.setItem('spin-tier-save', JSON.stringify(getSaveData())); } catch(e) {}
+  }
+}
+
+function updateSaveLinkBtn() {
+  const btn = document.getElementById('save-link-btn');
+  if (!btn) return;
+  btn.textContent = _fileHandle ? `📁 ${_fileHandle.name}` : 'Link save file';
+  btn.title = _fileHandle ? 'Click to re-link or move save file' : '';
+}
+
+async function clearFileHandle() {
+  _fileHandle = null;
+  try { await idbSet('fileHandle', null); } catch(e) {}
+}
+
+async function tryAutoLoad() {
+  if (window.showSaveFilePicker) {
+    try {
+      _fileHandle = await idbGet('fileHandle');
+      if (_fileHandle) {
+        const perm = await _fileHandle.queryPermission({mode: 'readwrite'});
+        if (perm === 'granted') {
+          try {
+            const text = await (await _fileHandle.getFile()).text();
+            if (applySave(JSON.parse(text))) { updateSaveLinkBtn(); return true; }
+          } catch(e) {
+            // file was deleted or moved — clear handle, start fresh with code defaults
+            await clearFileHandle();
+            localStorage.removeItem('spin-tier-save');
+            updateSaveLinkBtn();
+            return false;
+          }
+        } else if (perm === 'prompt') {
+          document.getElementById('resume-btn').style.display = '';
+          updateSaveLinkBtn();
+          return false;
+        }
+        // had a handle but couldn't use it — don't fall through to localStorage
+        return false;
+      }
+    } catch(e) { _fileHandle = null; }
+  }
+  return false;
+}
+
+document.getElementById('save-link-btn').addEventListener('click', async () => {
+  if (!window.showSaveFilePicker) { showToast('File API not available'); return; }
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: 'spin-tier-save.json',
+      types: [{ description: 'JSON save', accept: {'application/json': ['.json']} }]
+    });
+    // if picked file already has save data, load it first
+    try {
+      const text = await (await handle.getFile()).text();
+      if (text.trim()) applySave(JSON.parse(text));
+    } catch(e) {}
+    _fileHandle = handle;
+    await idbSet('fileHandle', handle);
+    await writeToHandle();
+    updateSaveLinkBtn();
+    drawWheel();
+    updateWheelSub();
+    showToast('Save file linked!');
+  } catch(e) {}
+});
+
+document.getElementById('resume-btn').addEventListener('click', async () => {
+  if (!_fileHandle) return;
+  try {
+    const perm = await _fileHandle.requestPermission({mode: 'readwrite'});
+    if (perm === 'granted') {
+      const text = await (await _fileHandle.getFile()).text();
+      applySave(JSON.parse(text));
+      document.getElementById('resume-btn').style.display = 'none';
+      drawWheel();
+      updateWheelSub();
+      showToast('Session resumed!');
+    }
+  } catch(e) {}
+});
+
+// ─────────────────────────────────────────────
+//  WHEEL DRAWING
+// ─────────────────────────────────────────────
+const canvas = document.getElementById("wheel-canvas");
+const ctx    = canvas.getContext("2d");
+const CX = 240, CY = 240, R = 225;
+
+function drawWheel() {
+  const items = remaining.length > 0 ? remaining : ITEMS;
+  const n   = items.length;
+  const arc = (2 * Math.PI) / n;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (let i = 0; i < n; i++) {
+    const a0 = wheelAngle + i * arc;
+    const a1 = a0 + arc;
+
+    // slice fill
+    const hue      = (i * 360) / n;
+    const sliceImg = ITEM_IMAGE_ELEMENTS[items[i]];
+
+    ctx.beginPath();
+    ctx.moveTo(CX, CY);
+    ctx.arc(CX, CY, R, a0, a1);
+    ctx.closePath();
+
+    if (sliceImg) {
+      ctx.save();
+      ctx.clip(); // limit to this slice
+
+      // rotate into the slice's own coordinate system so the image spins with it
+      ctx.translate(CX, CY);
+      ctx.rotate(a0 + arc / 2);
+
+      // cover: fill full slice extent — R radially, outer arc width tangentially
+      const targetR = R;
+      const targetT = 2 * R * Math.sin(arc / 2);
+      const iw = sliceImg.naturalWidth;
+      const ih = sliceImg.naturalHeight;
+      const scale = Math.max(targetR / iw, targetT / ih);
+      const dw = iw * scale;
+      const dh = ih * scale;
+      // center image at R/2 radially so its visual midpoint sits at the slice's midpoint
+      ctx.drawImage(sliceImg, -(dw - targetR) / 2, -dh / 2, dw, dh);
+
+      // color tint overlay for slice distinction
+      ctx.fillStyle = `hsla(${hue}, 70%, 32%, 0.44)`;
+      ctx.fillRect(-R * 3, -R * 3, R * 6, R * 6); // large rect, clipped to slice
+      ctx.restore();
+    } else {
+      ctx.fillStyle = `hsl(${hue}, 60%, ${i % 2 === 0 ? 52 : 44}%)`;
+      ctx.fill();
+    }
+
+    // slice border (re-trace path after restore clears clip)
+    ctx.beginPath();
+    ctx.moveTo(CX, CY);
+    ctx.arc(CX, CY, R, a0, a1);
+    ctx.closePath();
+    ctx.strokeStyle = "rgba(0,0,0,0.28)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // slice text
+    ctx.save();
+    ctx.translate(CX, CY);
+    ctx.rotate(a0 + arc / 2);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#fff";
+    ctx.font = `${n > 12 ? 14 : 17}px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.shadowColor = "rgba(0,0,0,0.85)";
+    ctx.shadowBlur  = sliceImg ? 7 : 3;
+    ctx.fillText(items[i], R - 10, 4);
+    ctx.restore();
+  }
+
+  // center hub
+  ctx.beginPath();
+  ctx.arc(CX, CY, 20, 0, 2 * Math.PI);
+  ctx.fillStyle = "#1a1a20";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.2)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+// Which item is under the pointer (pointing right, at angle = 0)
+function getSelected() {
+  const items = remaining.length > 0 ? remaining : ITEMS;
+  const n   = items.length;
+  const arc = (2 * Math.PI) / n;
+  // pointer at right = 0 in canvas coords.
+  // We need to find which slice contains 0.
+  // slice i occupies [wheelAngle + i*arc, wheelAngle + (i+1)*arc]
+  // normalise pointer position relative to wheel
+  const pointer = 0;
+  let normalised = ((pointer - wheelAngle) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+  let idx = Math.floor(normalised / arc) % n;
+  return items[idx];
+}
+
+function applyBgOverlay(itemName) {
+  const imgEl = ITEM_IMAGE_ELEMENTS[itemName];
+  const bgEl  = document.getElementById("bg-overlay");
+  bgEl.style.background = imgEl
+    ? `radial-gradient(ellipse at center, rgba(15,15,18,0.22) 0%, rgba(15,15,18,0.94) 75%), url("${imgEl.src}") center/cover`
+    : '';
+  bgEl.style.opacity = imgEl ? '1' : '0';
+}
+
+// ─────────────────────────────────────────────
+//  SPIN ANIMATION
+// ─────────────────────────────────────────────
+let lastSegItem = null;
+
+function animateSpin() {
+  spinVel    *= 0.9925;
+  wheelAngle += spinVel;
+  drawWheel();
+
+  const current = getSelected();
+  if (current !== lastSegItem) {
+    lastSegItem = current;
+    playSfx(sfxTick, 0.1);
+  }
+
+  if (spinVel > 0.0005) {
+    rafId = requestAnimationFrame(animateSpin);
+  } else {
+    lastSegItem = null;
+    spinning  = false;
+    selectedItem = getSelected();
+    document.getElementById("spin-result").textContent = selectedItem;
+    playSfx(sfxLand, 0.35);
+    document.getElementById("to-theme-btn").style.display = "";
+
+    // launch confetti
+    launchConfetti();
+
+    // show item image as full-viewport background
+    applyBgOverlay(selectedItem);
+
+    updateSpinBtn();
+    autoSave();
+  }
+}
+
+function updateSpinBtn() {
+  const btn   = document.getElementById("spin-btn");
+  const label = document.getElementById("spin-btn-label");
+  const sub   = document.getElementById("spin-btn-sub");
+  if (vetosRemaining > 0) {
+    btn.disabled = false;
+    btn.classList.add('veto-mode');
+    label.textContent = "VETO";
+    sub.textContent   = `${vetosRemaining} remaining`;
+  } else {
+    btn.disabled = true;
+    btn.classList.remove('veto-mode');
+    label.textContent = "SPIN!";
+    sub.textContent   = "";
+  }
+}
+
+document.getElementById("spin-btn").addEventListener("click", () => {
+  if (spinning) return;
+
+  const btn    = document.getElementById("spin-btn");
+  const isVeto = btn.classList.contains('veto-mode');
+
+  if (isVeto) {
+    vetosRemaining--;
+  } else {
+    if (remaining.length === 0) resetRemaining();
+  }
+
+  // reset button to neutral spinning state
+  btn.classList.remove('veto-mode');
+  document.getElementById("spin-btn-label").textContent = "SPIN!";
+  document.getElementById("spin-btn-sub").textContent   = "";
+
+  spinning = true;
+  btn.disabled = true;
+  document.getElementById("spin-result").textContent = "";
+  document.getElementById("to-theme-btn").style.display = "none";
+  document.getElementById("bg-overlay").style.opacity = '0';
+
+  spinVel = 0.28 + Math.random() * 0.22;
+  animateSpin();
+});
+
+document.getElementById("to-theme-btn").addEventListener("click", () => {
+  document.getElementById("to-theme-btn").style.display = "none";
+  showTaskScreen();
+});
+
+// ─────────────────────────────────────────────
+//  TASK SCREEN
+// ─────────────────────────────────────────────
+function formatTimer(s) {
+  const h  = Math.floor(s / 3600);
+  const m  = Math.floor((s % 3600) / 60);
+  const ss = s % 60;
+  return `${h}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+}
+
+function showTaskScreen(restoreMode = false) {
+  if (!restoreMode) {
+    currentRandomTask = TASKS_RANDOM.length > 0
+      ? TASKS_RANDOM[Math.floor(Math.random() * TASKS_RANDOM.length)]
+      : null;
+    timerSeconds = 0;
+    taskChecked  = [];
+  }
+
+  document.getElementById('task-item-name').textContent = selectedItem;
+
+  const allTasks = [...TASKS, ...(currentRandomTask ? [currentRandomTask] : [])];
+  const list = document.getElementById('task-list');
+  list.innerHTML = '';
+  allTasks.forEach((task, i) => {
+    const lbl = document.createElement('label');
+    lbl.className = 'task-item';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = taskChecked[i] ?? false;
+    if (cb.checked) lbl.classList.add('done');
+    cb.addEventListener('change', () => {
+      taskChecked[i] = cb.checked;
+      lbl.classList.toggle('done', cb.checked);
+      updateTaskContinueBtn();
+      autoSave();
+    });
+    const span = document.createElement('span');
+    span.textContent = task;
+    lbl.appendChild(cb);
+    lbl.appendChild(span);
+    list.appendChild(lbl);
+  });
+
+  timerRunning = true;
+  clearInterval(timerInterval);
+  document.getElementById('task-timer').textContent = formatTimer(timerSeconds);
+  document.getElementById('task-timer-pause').textContent = 'Pause';
+  timerInterval = setInterval(() => {
+    if (!timerRunning) return;
+    timerSeconds++;
+    document.getElementById('task-timer').textContent = formatTimer(timerSeconds);
+    if (timerSeconds % 30 === 0) autoSave();
+  }, 1000);
+
+  updateTaskContinueBtn();
+  showScreen('task-screen');
+  autoSave();
+}
+
+function updateTaskContinueBtn() {
+  const boxes = document.querySelectorAll('#task-list input[type=checkbox]');
+  const allDone = boxes.length > 0 && [...boxes].every(cb => cb.checked);
+  document.getElementById('task-continue-btn').disabled = !allDone;
+}
+
+document.getElementById('task-timer-pause').addEventListener('click', () => {
+  timerRunning = !timerRunning;
+  document.getElementById('task-timer-pause').textContent = timerRunning ? 'Pause' : 'Resume';
+});
+
+document.getElementById('task-continue-btn').addEventListener('click', () => {
+  showThemeScreen();
+});
+
+// ─────────────────────────────────────────────
+//  THEME ANNOUNCE
+// ─────────────────────────────────────────────
+function showThemeScreen() {
+  if (themesDeck.length === 0) resetThemesDeck();
+  currentTheme = themesDeck.shift();
+
+  document.getElementById("announce-item").textContent = selectedItem;
+
+  const pill = document.getElementById("announce-theme");
+  const btn  = document.getElementById("go-tier-btn");
+
+  pill.textContent = "…";
+  const [initBg, initFg] = randomThemeColor();
+  pill.style.background = initBg;
+  pill.style.color      = initFg;
+  btn.style.visibility  = "hidden";
+
+  showScreen("theme-screen");
+
+  let step = 0;
+  const totalSteps = 22;
+  let lastTheme = null;
+  // animate only from remaining undealt themes + the winning one
+  const animPool = themesDeck.length > 0 ? [...themesDeck, currentTheme] : [currentTheme];
+
+  function tick() {
+    if (step < totalSteps - 1) {
+      while (pill.textContent === lastTheme) {
+        pill.textContent = animPool[Math.floor(Math.random() * animPool.length)];
+      }
+      const [bg, fg] = randomThemeColor();
+      pill.style.background = bg;
+      pill.style.color      = fg;
+      step++;
+      const progress = step / totalSteps;
+      const delay = 50 + Math.pow(progress, 2) * 450;
+      lastTheme = pill.textContent;
+      playSfx(sfxTick, 0.1);
+      setTimeout(tick, delay);
+    } else {
+      pill.textContent      = currentTheme;
+      const [bg, fg]        = randomThemeColor();
+      pill.style.background = bg;
+      pill.style.color      = fg;
+      playSfx(sfxTheme, 0.35);
+      btn.style.visibility  = "visible";
+    }
+  }
+
+  setTimeout(tick, 120);
+}
+
+document.getElementById("go-tier-btn").addEventListener("click", () => {
+  buildTierScreen();
+  showScreen("tier-screen");
+});
+
+// ─────────────────────────────────────────────
+//  TIER LIST
+// ─────────────────────────────────────────────
+let dragChip   = null;
+let dragFromEl = null;
+
+function makeChip(label, theme) {
+  const c = document.createElement("div");
+  c.className     = "item-chip";
+  c.dataset.label = label;
+  c.draggable     = true;
+
+  if (ITEM_IMAGE_ELEMENTS[label]) {
+    const src = ITEM_IMAGE_ELEMENTS[label].src;
+    c.style.background = `linear-gradient(rgba(0,0,0,0.48),rgba(0,0,0,0.48)),url("${src}") center/cover`;
+    c.style.color = '#fff';
+    c.classList.add('has-img');
+  }
+
+  const text = document.createElement('div');
+  text.className = 'chip-text';
+  const nameEl = document.createElement('span');
+  nameEl.textContent = label;
+  text.appendChild(nameEl);
+  if (theme) {
+    const themeEl = document.createElement("span");
+    themeEl.className   = "chip-theme";
+    themeEl.textContent = theme;
+    text.appendChild(themeEl);
+  }
+  c.appendChild(text);
+
+  c.addEventListener("dragstart", e => {
+    dragChip   = c;
+    dragFromEl = c.parentElement;
+    setTimeout(() => c.classList.add("dragging"), 0);
+    e.dataTransfer.effectAllowed = "move";
+  });
+  c.addEventListener("dragend", () => {
+    c.classList.remove("dragging");
+    document.querySelectorAll(".drag-over").forEach(el => el.classList.remove("drag-over"));
+  });
+  return c;
+}
+
+function setupDropZone(el) {
+  el.addEventListener("dragover", e => {
+    e.preventDefault();
+    el.classList.add("drag-over");
+  });
+  el.addEventListener("dragleave", () => el.classList.remove("drag-over"));
+  el.addEventListener("drop", e => {
+    e.preventDefault();
+    el.classList.remove("drag-over");
+    if (!dragChip) return;
+
+    const name      = dragChip.dataset.label;
+    const fromTier  = dragFromEl && dragFromEl.dataset.tier !== undefined ? parseInt(dragFromEl.dataset.tier) : null;
+    const toTier    = el.dataset.tier !== undefined ? parseInt(el.dataset.tier) : null;
+
+    // remove from source tier contents
+    if (fromTier !== null && !isNaN(fromTier)) {
+      tierContents[fromTier] = tierContents[fromTier].filter(x => x !== name);
+    }
+    // add to destination tier contents
+    if (toTier !== null && !isNaN(toTier)) {
+      if (!tierContents[toTier].includes(name)) {
+        tierContents[toTier].push(name);
+      }
+    }
+
+    el.appendChild(dragChip);
+    playSfx(sfxPlace, 0.15);
+    dragChip   = null;
+    dragFromEl = null;
+  });
+}
+
+function buildTierScreen() {
+  // pending tray — new item chip
+  const tray = document.getElementById("pending-tray");
+  tray.innerHTML = "";
+  tray.appendChild(makeChip(selectedItem, currentTheme));
+  setupDropZone(tray);
+
+  // tier rows
+  const wrap = document.getElementById("tiers-wrap");
+  wrap.innerHTML = "";
+
+  TIERS.forEach((tier, i) => {
+    const row  = document.createElement("div");
+    row.className = "tier-row";
+
+    const lbl  = document.createElement("div");
+    lbl.className   = "tier-lbl";
+    lbl.textContent = tier.label;
+    lbl.style.background = tier.color;
+
+    const drop = document.createElement("div");
+    drop.className    = "tier-drop";
+    drop.dataset.tier = i;
+
+    // re-populate persisted chips
+    tierContents[i].forEach(name => drop.appendChild(makeChip(name, placedItems[name]?.theme)));
+    setupDropZone(drop);
+
+    row.appendChild(lbl);
+    row.appendChild(drop);
+    wrap.appendChild(row);
+  });
+
+  // label the button so the user knows this is the last item
+  const unplaced = ITEMS.length - Object.keys(placedItems).length;
+  document.getElementById("next-btn").textContent = unplaced <= 1 ? "Finish!" : "Next Round";
+}
+
+// ─────────────────────────────────────────────
+//  NEXT SPIN
+// ─────────────────────────────────────────────
+document.getElementById("next-btn").addEventListener("click", () => {
+  // find where the current item ended up
+  const name = selectedItem;
+  let foundTier = null;
+
+  document.querySelectorAll(".tier-drop").forEach(drop => {
+    const chips = [...drop.children].map(c => c.dataset.label);
+    if (chips.includes(name)) foundTier = parseInt(drop.dataset.tier);
+  });
+
+  // still in pending tray?
+  const pendingChips = [...document.getElementById("pending-tray").children].map(c => c.dataset.label);
+  if (pendingChips.length > 0) {
+    showToast("Empty the holding area!");
+    return;
+  }
+
+  if (foundTier !== null) {
+    placedItems[name] = { tier: foundTier, theme: currentTheme };
+  }
+
+  // remove from remaining pool
+  remaining = remaining.filter(x => x !== name);
+  spinCount++;
+
+  if (remaining.length === 0) resetRemaining();
+
+  selectedItem = null;
+  currentTheme = null;
+  autoSave();
+
+  // all items placed → win state
+  if (Object.keys(placedItems).length === ITEMS.length) {
+    showFinishScreen();
+    return;
+  }
+
+  // update wheel sub-heading
+  const rated = Object.keys(placedItems).length;
+  document.getElementById("wheel-sub").textContent =
+    `Round ${spinCount + 1} · ${rated} item${rated !== 1 ? "s" : ""} rated`;
+
+  document.getElementById("to-theme-btn").style.display = "none";
+  document.getElementById("spin-result").textContent = "";
+  document.getElementById("bg-overlay").style.opacity = '0';
+  // reset button
+  const spinBtn = document.getElementById("spin-btn");
+  spinBtn.disabled = false;
+  spinBtn.classList.remove('veto-mode');
+  document.getElementById("spin-btn-label").textContent = "SPIN!";
+  document.getElementById("spin-btn-sub").textContent   = "";
+  drawWheel();
+  showScreen("wheel-screen");
+});
+
+// ─────────────────────────────────────────────
+//  FINISH SCREEN
+// ─────────────────────────────────────────────
+function launchConfetti() {
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'position:fixed;inset:0;z-index:200;pointer-events:none';
+  // match visual viewport (respects zoom)
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+
+  const colors = ['#f4a261','#e76f51','#2a9d8f','#e9c46a','#a8dadc','#c77dff','#80ffdb','#f72585'];
+  const particles = Array.from({length: 100}, () => ({
+    x:  Math.random() * canvas.width,
+    y: -20 - Math.random() * 300,
+    vx: (Math.random() - 0.5) * 4,
+    vy: 1.5 + Math.random() * 3.5,
+    w:  6 + Math.random() * 9,
+    h:  3 + Math.random() * 5,
+    rot: Math.random() * Math.PI * 2,
+    rs: (Math.random() - 0.5) * 0.18,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    alpha: 1
+  }));
+
+  let start = null;
+  const DURATION = 4500;
+
+  (function tick(ts) {
+    if (!start) start = ts;
+    const progress = (ts - start) / DURATION;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    for (const p of particles) {
+      p.x  += p.vx;
+      p.y  += p.vy;
+      p.vy += 0.06;
+      p.rot += p.rs;
+      if (progress > 0.55) p.alpha = Math.max(0, p.alpha - 0.014);
+      if (p.alpha > 0 && p.y < canvas.height + 30) alive = true;
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    }
+    if (alive) requestAnimationFrame(tick);
+    else canvas.remove();
+  })(0);
+}
+
+function showFinishScreen(withConfetti = true) {
+  const wrap = document.getElementById('finish-tiers');
+  wrap.innerHTML = '';
+  TIERS.forEach((tier, i) => {
+    if (!tierContents[i].length) return;
+    const row = document.createElement('div');
+    row.className = 'finish-tier-row';
+    const lbl = document.createElement('div');
+    lbl.className   = 'finish-tier-lbl';
+    lbl.textContent = tier.label;
+    lbl.style.background = tier.color;
+    const itemsDiv = document.createElement('div');
+    itemsDiv.className = 'finish-tier-items';
+    tierContents[i].forEach(name => itemsDiv.appendChild(makeChip(name, placedItems[name]?.theme)));
+    row.appendChild(lbl);
+    row.appendChild(itemsDiv);
+    wrap.appendChild(row);
+  });
+
+  const placed = Object.keys(placedItems).length;
+  document.getElementById('finish-sub').textContent =
+    `${placed} item${placed !== 1 ? 's' : ''} rated across ${spinCount} spins`;
+  document.getElementById('bg-overlay').style.opacity = '0';
+  showScreen('finish-screen');
+  if (withConfetti) launchConfetti();
+}
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+  Object.keys(placedItems).forEach(k => delete placedItems[k]);
+  tierContents.forEach(row => row.splice(0));
+  spinCount    = 0;
+  selectedItem = null;
+  currentTheme = null;
+  const spinBtn = document.getElementById("spin-btn");
+  spinBtn.disabled = false;
+  spinBtn.classList.remove('veto-mode');
+  document.getElementById("spin-btn-label").textContent = "SPIN!";
+  document.getElementById("spin-btn-sub").textContent   = "";
+  resetRemaining();
+  resetThemesDeck();
+  autoSave();
+  drawWheel();
+  showScreen('wheel-screen');
+});
+
+// ─────────────────────────────────────────────
+//  RESPONSIVE ZOOM
+// ─────────────────────────────────────────────
+function applyZoom() {
+  const scale = Math.min(
+    window.innerWidth  / 552,   // 520px app + ~32px body padding
+    window.innerHeight / 700    // approximate natural content height
+  );
+  const zoom = Math.min(3, Math.max(0.4, scale));
+  const app = document.getElementById('app');
+  app.style.zoom = zoom;
+
+  // tier + finish screens grow with content up to viewport edge
+  const wideMode = ['tier-screen', 'finish-screen'].some(
+    id => document.getElementById(id).classList.contains('active')
+  );
+  if (wideMode) {
+    const cap = Math.floor((window.innerWidth - 32) / zoom);
+    app.style.width    = 'max-content';
+    app.style.minWidth = Math.min(520, cap) + 'px';
+    app.style.maxWidth = cap + 'px';
+  } else {
+    app.style.width    = '';
+    app.style.minWidth = '';
+    app.style.maxWidth = '';
+  }
+
+  // available height in app CSS coords: viewport minus body padding (2rem+4rem=96px) divided by zoom
+  const appMaxH = Math.floor((window.innerHeight - 96) / zoom);
+  document.documentElement.style.setProperty('--app-max-h', `${appMaxH}px`);
+}
+applyZoom();
+window.addEventListener('resize', applyZoom);
+
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+(async () => {
+  const loaded = await tryAutoLoad();
+  if (!loaded) { resetRemaining(); resetThemesDeck(); }
+  await preloadImages();
+  updateWheelSub();
+  drawWheel();
+  updateSaveLinkBtn();
+  if (loaded) {
+    if (_restoredScreen === 'task-screen') {
+      if (selectedItem) applyBgOverlay(selectedItem);
+      showTaskScreen(true);
+    } else if (_restoredScreen === 'finish-screen') {
+      showFinishScreen(false);
+    } else if (_restoredScreen === 'wheel-screen' && selectedItem) {
+      document.getElementById('spin-result').textContent = selectedItem;
+      document.getElementById('to-theme-btn').style.display = '';
+      applyBgOverlay(selectedItem);
+      updateSpinBtn();
+    }
+  }
+})();
+</script>
+</body>
+</html>
