@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spin & Tier</title>
+<title>Nostalgia Bait</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -427,16 +427,35 @@
   #finish-actions { display: flex; gap: 8px; margin-top: 1rem; }
   #finish-actions .action-btn { flex: 1; }
 
-  /* ── SAVE CONTROLS ── */
-  #save-controls {
+  /* ── TOP MENU ── */
+  #top-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 500;
     display: flex;
-    gap: 8px;
-    justify-content: center;
-    margin-top: 1.5rem;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 16px 7px 14px;
+    background: var(--bg2);
+    border-bottom-right-radius: var(--radius);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  #top-menu-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text3);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  #top-menu-save {
+    display: flex;
+    gap: 6px;
+    align-items: center;
   }
   .save-btn {
-    padding: 5px 14px;
+    padding: 4px 12px;
     font-size: 11px;
     font-weight: 500;
     border: 1px solid var(--border);
@@ -446,12 +465,12 @@
     cursor: pointer;
     transition: background 0.12s, color 0.12s;
     font-family: var(--font);
-    max-width: 220px;
+    max-width: 200px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .save-btn:hover { background: var(--bg2); color: var(--text); }
+  .save-btn:hover { background: var(--bg3); color: var(--text); }
   #resume-btn { color: var(--text); border-color: var(--border2); }
 
   /* ── BACKGROUND OVERLAY (item image + vignette, theme screen) ── */
@@ -505,10 +524,6 @@
     <button id="spin-btn"><span id="spin-btn-label">SPIN!</span><span id="spin-btn-sub"></span></button>
     <div id="spin-result"></div>
     <button id="to-theme-btn" class="action-btn" style="display:none;margin-top:1rem">Continue →</button>
-    <div id="save-controls">
-      <button class="save-btn" id="resume-btn" style="display:none">▶ Resume session</button>
-      <button class="save-btn" id="save-link-btn">Link save file</button>
-    </div>
   </div>
 
   <!-- ── TASK ── -->
@@ -558,6 +573,15 @@
     </div>
   </div>
 
+</div>
+
+<div id="top-menu">
+  <span id="top-menu-title">Nostalgia Bait</span>
+  <div id="top-menu-save">
+    <button class="save-btn" id="resume-btn" style="display:none">▶ Resume session</button>
+    <button class="save-btn" id="new-game-btn">New Game</button>
+    <button class="save-btn" id="save-link-btn">Link save file</button>
+  </div>
 </div>
 
 <div id="bg-overlay"></div>
@@ -1290,16 +1314,19 @@ document.getElementById("go-tier-btn").addEventListener("click", () => {
 });
 
 // ─────────────────────────────────────────────
-//  TIER LIST
+//  TIER LIST  (pointer-based drag — works in OBS browser source)
 // ─────────────────────────────────────────────
 let dragChip   = null;
 let dragFromEl = null;
+let dragClone  = null;
+let dragOffX   = 0;
+let dragOffY   = 0;
 
 function makeChip(label, theme) {
   const c = document.createElement("div");
   c.className     = "item-chip";
   c.dataset.label = label;
-  c.draggable     = true;
+  c.style.touchAction = 'none'; // required for pointer capture in CEF
 
   if (ITEM_IMAGE_ELEMENTS[label]) {
     const src = ITEM_IMAGE_ELEMENTS[label].src;
@@ -1321,50 +1348,88 @@ function makeChip(label, theme) {
   }
   c.appendChild(text);
 
-  c.addEventListener("dragstart", e => {
+  c.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+
     dragChip   = c;
     dragFromEl = c.parentElement;
-    setTimeout(() => c.classList.add("dragging"), 0);
-    e.dataTransfer.effectAllowed = "move";
-  });
-  c.addEventListener("dragend", () => {
-    c.classList.remove("dragging");
-    document.querySelectorAll(".drag-over").forEach(el => el.classList.remove("drag-over"));
-  });
-  return c;
-}
 
-function setupDropZone(el) {
-  el.addEventListener("dragover", e => {
-    e.preventDefault();
-    el.classList.add("drag-over");
+    const rect = c.getBoundingClientRect();
+    dragOffX = e.clientX - rect.left;
+    dragOffY = e.clientY - rect.top;
+
+    // floating clone sized to match the zoomed chip
+    const zoom = parseFloat(document.getElementById('app').style.zoom) || 1;
+    dragClone = c.cloneNode(true);
+    dragClone.style.cssText =
+      `position:fixed;z-index:9999;pointer-events:none;` +
+      `left:${rect.left}px;top:${rect.top}px;` +
+      `width:${rect.width / zoom}px;` +
+      `transform:scale(${zoom});transform-origin:top left;` +
+      `opacity:0.88;box-shadow:0 6px 24px rgba(0,0,0,0.5);` +
+      `transition:box-shadow 0.1s;`;
+    // carry over any inline background set by makeChip
+    if (c.style.background) dragClone.style.background = c.style.background;
+    if (c.style.color)      dragClone.style.color      = c.style.color;
+    document.body.appendChild(dragClone);
+
+    c.classList.add('dragging');
+    c.setPointerCapture(e.pointerId);
   });
-  el.addEventListener("dragleave", () => el.classList.remove("drag-over"));
-  el.addEventListener("drop", e => {
-    e.preventDefault();
-    el.classList.remove("drag-over");
+
+  c.addEventListener('pointermove', e => {
+    if (!dragClone) return;
+    dragClone.style.left = (e.clientX - dragOffX) + 'px';
+    dragClone.style.top  = (e.clientY - dragOffY) + 'px';
+
+    // highlight drop zone under cursor
+    dragClone.style.visibility = 'hidden';
+    const under = document.elementFromPoint(e.clientX, e.clientY);
+    dragClone.style.visibility = '';
+    document.querySelectorAll('.drag-over').forEach(d => d.classList.remove('drag-over'));
+    const zone = under?.closest('.tier-drop, #pending-tray');
+    if (zone) zone.classList.add('drag-over');
+  });
+
+  c.addEventListener('pointerup', e => {
     if (!dragChip) return;
 
-    const name      = dragChip.dataset.label;
-    const fromTier  = dragFromEl && dragFromEl.dataset.tier !== undefined ? parseInt(dragFromEl.dataset.tier) : null;
-    const toTier    = el.dataset.tier !== undefined ? parseInt(el.dataset.tier) : null;
+    dragClone.style.visibility = 'hidden';
+    const under = document.elementFromPoint(e.clientX, e.clientY);
+    dragClone.style.visibility = '';
+    const zone = under?.closest('.tier-drop, #pending-tray');
 
-    // remove from source tier contents
-    if (fromTier !== null && !isNaN(fromTier)) {
-      tierContents[fromTier] = tierContents[fromTier].filter(x => x !== name);
-    }
-    // add to destination tier contents
-    if (toTier !== null && !isNaN(toTier)) {
-      if (!tierContents[toTier].includes(name)) {
+    document.querySelectorAll('.drag-over').forEach(d => d.classList.remove('drag-over'));
+    dragClone.remove();
+    dragClone = null;
+    dragChip.classList.remove('dragging');
+
+    if (zone) {
+      const name     = dragChip.dataset.label;
+      const fromTier = dragFromEl?.dataset.tier !== undefined ? parseInt(dragFromEl.dataset.tier) : null;
+      const toTier   = zone.dataset.tier        !== undefined ? parseInt(zone.dataset.tier)        : null;
+
+      if (fromTier !== null && !isNaN(fromTier))
+        tierContents[fromTier] = tierContents[fromTier].filter(x => x !== name);
+      if (toTier !== null && !isNaN(toTier) && !tierContents[toTier].includes(name))
         tierContents[toTier].push(name);
-      }
+
+      zone.appendChild(dragChip);
+      playSfx(sfxPlace, 0.15);
     }
 
-    el.appendChild(dragChip);
-    playSfx(sfxPlace, 0.15);
     dragChip   = null;
     dragFromEl = null;
   });
+
+  c.addEventListener('pointercancel', () => {
+    if (dragClone) { dragClone.remove(); dragClone = null; }
+    if (dragChip)  { dragChip.classList.remove('dragging'); dragChip = null; }
+    document.querySelectorAll('.drag-over').forEach(d => d.classList.remove('drag-over'));
+  });
+
+  return c;
 }
 
 function buildTierScreen() {
@@ -1372,7 +1437,6 @@ function buildTierScreen() {
   const tray = document.getElementById("pending-tray");
   tray.innerHTML = "";
   tray.appendChild(makeChip(selectedItem, currentTheme));
-  setupDropZone(tray);
 
   // tier rows
   const wrap = document.getElementById("tiers-wrap");
@@ -1393,7 +1457,6 @@ function buildTierScreen() {
 
     // re-populate persisted chips
     tierContents[i].forEach(name => drop.appendChild(makeChip(name, placedItems[name]?.theme)));
-    setupDropZone(drop);
 
     row.appendChild(lbl);
     row.appendChild(drop);
@@ -1560,6 +1623,41 @@ document.getElementById('restart-btn').addEventListener('click', () => {
   autoSave();
   drawWheel();
   showScreen('wheel-screen');
+});
+
+document.getElementById('new-game-btn').addEventListener('click', async () => {
+  const hasFile = !!_fileHandle;
+  const msg = hasFile
+    ? `Start a new game and unlink "${_fileHandle.name}"? All progress will be lost.`
+    : 'Start a new game? All progress will be lost.';
+  if (!confirm(msg)) return;
+
+  if (hasFile) {
+    await clearFileHandle();
+    try { localStorage.removeItem('spin-tier-save'); } catch(e) {}
+    updateSaveLinkBtn();
+  }
+
+  Object.keys(placedItems).forEach(k => delete placedItems[k]);
+  tierContents.forEach(row => row.splice(0));
+  spinCount    = 0;
+  selectedItem = null;
+  currentTheme = null;
+  document.getElementById('resume-btn').style.display = 'none';
+  const spinBtn = document.getElementById("spin-btn");
+  spinBtn.disabled = false;
+  spinBtn.classList.remove('veto-mode');
+  document.getElementById("spin-btn-label").textContent = "SPIN!";
+  document.getElementById("spin-btn-sub").textContent   = "";
+  document.getElementById("spin-result").textContent    = "";
+  document.getElementById("to-theme-btn").style.display = "none";
+  document.getElementById("bg-overlay").style.opacity   = '0';
+  resetRemaining();
+  resetThemesDeck();
+  drawWheel();
+  updateWheelSub();
+  showScreen('wheel-screen');
+  showToast(hasFile ? 'New game — save file unlinked' : 'New game started');
 });
 
 // ─────────────────────────────────────────────
