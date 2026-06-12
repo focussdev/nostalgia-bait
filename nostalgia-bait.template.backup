@@ -1,6 +1,6 @@
 {
   "name": "Nostalgia Bait",
-  "maxRounds": 2,
+  "maxRounds": 0,
   "maxVetoes": 3,
   "items": [
     "Sudeki",
@@ -61,6 +61,7 @@
   "tasksRandom": [
     "do 10 backflips",
     "play an additional hour",
-    "make TTS cost a single point while playing"
+    "make TTS cost a single point while playing",
+    "at least 1 family guy reference every 10 minutes"
   ]
 }

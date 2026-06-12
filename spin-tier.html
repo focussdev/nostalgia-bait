@@ -66,7 +66,7 @@
   .screen-title {
     font-size: 22px;
     font-weight: 600;
-    margin-bottom: 4px;
+    margin-bottom: 2rem;
   }
   .screen-sub {
     font-size: 13px;
@@ -455,11 +455,15 @@
   #finish-actions .action-btn { flex: 1; }
 
   /* ── TOP MENU ── */
-  #top-menu {
+  #top-bar {
     position: fixed;
     top: 0;
     left: 0;
     z-index: 500;
+    display: flex;
+    align-items: flex-start;
+  }
+  #top-menu {
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -471,12 +475,26 @@
     border-bottom: 1px solid var(--border);
   }
   #top-menu-title {
-    align-self: center;
     font-size: 13px;
     font-weight: 700;
     color: var(--text3);
     letter-spacing: 0.04em;
     white-space: nowrap;
+    align-self: center;
+  }
+  #game-status {
+    padding: 7px 14px 10px;
+    background: var(--bg2);
+    border-bottom-right-radius: var(--radius);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text3);
+    white-space: nowrap;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
   }
   #top-menu-save {
     display: flex;
@@ -561,7 +579,6 @@
   <!-- ── WHEEL ── -->
   <div id="wheel-screen" class="screen active">
     <p class="screen-title">Spin The Wheel</p>
-    <p class="screen-sub" id="wheel-sub">Pick an item and see where it lands</p>
     <div id="wheel-wrap">
       <canvas id="wheel-canvas" width="480" height="480"></canvas>
       <div id="pointer"></div>
@@ -626,19 +643,22 @@
 
 </div>
 
-<div id="top-menu">
-  <span id="top-menu-title">Nostalgia Bait</span>
-  <button class="menu-btn" id="hide-save-menu-btn">Show Save Menu</button>
-  <div id="top-menu-save" class="collapsed">
-    <span class="menu-divider"></span>
-    <button class="menu-btn" id="template-link-btn">Load Template</button>
-    <button class="menu-btn" id="save-link-btn">Link Save File</button>
-    <button class="menu-btn" id="resume-btn" style="display:none">Resume Session</button>
-    <span class="menu-divider"></span>
-    <button class="menu-btn" id="reset-save-btn">Reset Save</button>
-    <button class="menu-btn" id="new-game-btn">New Game</button>
-    <button class="menu-btn" id="reset-template-btn">Reset Template</button>
+<div id="top-bar">
+  <div id="top-menu">
+    <span id="top-menu-title">Nostalgia Bait</span>
+    <button class="menu-btn" id="hide-save-menu-btn">Show Save Menu</button>
+    <div id="top-menu-save" class="collapsed">
+      <span class="menu-divider"></span>
+      <button class="menu-btn" id="template-link-btn">Load Template</button>
+      <button class="menu-btn" id="save-link-btn">Link Save File</button>
+      <button class="menu-btn" id="resume-btn" style="display:none">Resume Session</button>
+      <span class="menu-divider"></span>
+      <button class="menu-btn" id="reset-save-btn">Reset Save</button>
+      <button class="menu-btn" id="new-game-btn">Unlink Save</button>
+      <button class="menu-btn" id="reset-template-btn">Unlink Template</button>
+    </div>
   </div>
+  <div id="game-status"></div>
 </div>
 
 <div id="bg-overlay"></div>
@@ -674,50 +694,15 @@ function playSfx(sfx, volume = 0.5) {
 //  DATA
 // ─────────────────────────────────────────────
 const ITEMS = [
-  "Sudeki",
-  "Neighbours from Hell",
-  "Kao the Kangaroo",
-  "Mr Jones Graveyard Shift",
-  "Creatures Village",
-  "PoP Sands of Time",
-  "Hitman Blood Money",
-  "Last Stand",
-  "Harvester",
-  "NFS Most Wanted",
-  "Silverfall",
-  "Star Wars Dark Forces"
+  "Item1",
+  "Item2",
+  "Item3"
 ];
 
 const THEMES = [
-  "At 5:45 before work",
-  "For speedrunning",
-  "When zonked",
-  "When shitfaced",
-  "As the last game on a deserted island",
-  "Played on a Pentium 8 using a CRT monitor at 12 fps",
-  "As a competitive E-Sport with a price pool of more than 200 million dollars",
-  "After playing for 48 hours straight",
-  "Subject of an 8 hour YouTube video essay",
-  "Gambling",
-  "How much it reminds me of that one time I threw my friends rubber eraser out of a driving shool bus window",
-  "My actual enjoyment of the video game (but tiers are reverse)",
-  "but if every character was family guy",
-  "As a streaming game",
-  "Definitely from 2006",
-  "Better or worse than as a kid",
-  "I wish they would make games like this nowadays",
-  "How important to my general life",
-  "Will think about daily for the next 2 weeks",
-  "just do whatever man i dont care anymore",
-  "The game moves up 1 tier per minute of technical difficulties",
-  "Would burn case or throw it into the sea",
-  "Bargain Bin Game",
-  "but the protagonist keeps saying 'gyahoo'",
-  "do i think jerma would like this game",
-  "among us fornite",
-  "just play morrowind instead",
-  "gurf",
-  "+1 tier for every frog seen, heard, or mentioned"
+  "Theme1",
+  "Theme2",
+  "Theme3"
 ];
 
 const TIERS = [
@@ -730,14 +715,15 @@ const TIERS = [
 ];
 
 const TASKS = [
-  "Play for at least 1 hour",
+  "Task1 (Permanent)",
+  "Task2 (Permanent)",
 ];
 
 // One random task is picked from this list each round (if non-empty)
 const TASKS_RANDOM = [
-  "do 10 backflips",
-  "play an additional hour",
-  "make TTS cost a single point while playing",
+  "Task1 (Random)",
+  "Task2 (Random)",
+  "Task3 (Random)",
 ];
 
 // Snapshot of code defaults — used to reset when template is unlinked
@@ -884,7 +870,11 @@ async function preloadImages() {
 function updateWheelSub() {
   const rated = Object.keys(placedItems).length;
   const total = maxRounds > 0 ? maxRounds : ITEMS.length;
-  document.getElementById('wheel-sub').textContent = `Round ${spinCount + 1} / ${total} · ${rated} item${rated !== 1 ? 's' : ''} rated`;
+  const el = document.getElementById('game-status');
+  if (!el) return;
+  el.innerHTML =
+    `<span>Round ${spinCount + 1} / ${total}</span>` +
+    `<span style="font-size:13px;font-weight:400;opacity:0.65">${rated} item${rated !== 1 ? 's' : ''} rated</span>`;
 }
 
 // ─────────────────────────────────────────────
@@ -933,7 +923,7 @@ function applyTemplate(tpl) {
   TASKS.splice(0, Infinity, ...tpl.tasks);
   TASKS_RANDOM.splice(0, Infinity, ...(tpl.tasksRandom || []));
   maxRounds = tpl.maxRounds || 0;
-  activeTemplateId = tpl.id || templateHash(tpl);
+  activeTemplateId = tpl.name || tpl.id || 'default';
   while (tierContents.length < TIERS.length) tierContents.push([]);
   while (tierContents.length > TIERS.length) tierContents.pop();
 }
@@ -983,6 +973,11 @@ function applyStateFromSave(s) {
     ? saved : 'wheel-screen';
 }
 
+function saveMatchesTemplate(save) {
+  if (!save) return true; // new/empty file — always allowed
+  return save.templateId === activeTemplateId;
+}
+
 function applySave(save) {
   if (!save) return false;
 
@@ -999,10 +994,6 @@ function applySave(save) {
   }
 
   if (save.version !== 2) return false;
-
-  if (save.templateId && activeTemplateId !== 'default' && save.templateId !== activeTemplateId) {
-    showToast('⚠ Save template mismatch — loaded anyway');
-  }
   applyStateFromSave(save.state);
   return true;
 }
@@ -1085,7 +1076,14 @@ async function tryAutoLoad() {
         if (perm === 'granted') {
           try {
             const text = await (await _fileHandle.getFile()).text();
-            if (applySave(JSON.parse(text))) { updateSaveLinkBtn(); return true; }
+            const save = JSON.parse(text);
+            if (!saveMatchesTemplate(save)) {
+              await clearFileHandle();
+              updateSaveLinkBtn();
+              showToast('⚠ Save file is for a different template — unlinked');
+              return false;
+            }
+            if (applySave(save)) { updateSaveLinkBtn(); return true; }
           } catch(e) {
             await clearFileHandle();
             localStorage.removeItem('spin-tier-save');
@@ -1108,6 +1106,11 @@ async function tryAutoLoad() {
     const raw = localStorage.getItem('spin-tier-save');
     if (raw) {
       const save = JSON.parse(raw);
+      if (!saveMatchesTemplate(save)) {
+        localStorage.removeItem('spin-tier-save');
+        showToast('⚠ Saved session is for a different template — cleared');
+        return false;
+      }
       if (applySave(save)) return true;
     }
   } catch(e) {}
@@ -1138,6 +1141,31 @@ document.getElementById('template-link-btn').addEventListener('click', async () 
     await idbSet('templateHandle', handle);
     applyTemplate(tpl);
     updateTemplateLinkBtn();
+
+    // Unlink any save that doesn't belong to this template
+    if (_fileHandle) {
+      let saveUnlinked = false;
+      try {
+        const text = await (await _fileHandle.getFile()).text();
+        if (text.trim()) {
+          const existingSave = JSON.parse(text);
+          if (!saveMatchesTemplate(existingSave)) {
+            await clearFileHandle();
+            updateSaveLinkBtn();
+            saveUnlinked = true;
+          }
+        }
+      } catch(e) {}
+      if (saveUnlinked) {
+        showToast(`Template loaded — save file was for a different template and has been unlinked`);
+        // reset and exit early so we don't auto-save into the now-unlinked file
+        resetGameState();
+        drawWheel();
+        updateWheelSub();
+        return;
+      }
+    }
+
     // reset game state for the new template
     Object.keys(placedItems).forEach(k => delete placedItems[k]);
     tierContents.forEach(row => row.splice(0));
@@ -1155,30 +1183,33 @@ document.getElementById('save-link-btn').addEventListener('click', async () => {
   if (!window.showSaveFilePicker) { showToast('File API not available'); return; }
   try {
     const handle = await window.showSaveFilePicker({
-      suggestedName: 'spin-tier-save.json',
+      suggestedName: 'nostalgia-bait.save.json',
+      startIn: _templateHandle || 'documents',
       types: [{ description: 'JSON save', accept: {'application/json': ['.json']} }]
     });
+
+    let existing = null;
     try {
       const text = await (await handle.getFile()).text();
-      if (text.trim()) {
-        const existing = JSON.parse(text);
-        if (existing.templateId && existing.templateId !== activeTemplateId) {
-          showToast('⚠ Save uses a different template');
-        }
-        applySave(existing);
-      }
+      if (text.trim()) existing = JSON.parse(text);
     } catch(e) {}
+
+    if (!saveMatchesTemplate(existing)) {
+      showToast(`⚠ Save file belongs to a different template — load the correct template first`);
+      return;
+    }
+
     _fileHandle = handle;
     await idbSet('fileHandle', handle);
-    // also try to restore template handle if not already loaded
-    if (!_templateHandle) await tryLoadTemplateHandle();
+    if (existing) applySave(existing);
     await writeToHandle();
     updateSaveLinkBtn();
     updateTemplateLinkBtn();
     drawWheel();
     updateWheelSub();
+    updateVetoPips();
     showToast('Save file linked!');
-  } catch(e) {}
+  } catch(e) { if (e.name !== 'AbortError') console.error(e); }
 });
 
 // ── Resume button ──
@@ -1200,7 +1231,14 @@ document.getElementById('resume-btn').addEventListener('click', async () => {
     const perm = await _fileHandle.requestPermission({mode: 'readwrite'});
     if (perm === 'granted') {
       const text = await (await _fileHandle.getFile()).text();
-      applySave(JSON.parse(text));
+      const save = JSON.parse(text);
+      if (!saveMatchesTemplate(save)) {
+        await clearFileHandle();
+        updateSaveLinkBtn();
+        showToast('⚠ Save file is for a different template — unlinked');
+        return;
+      }
+      applySave(save);
       document.getElementById('resume-btn').style.display = 'none';
       drawWheel();
       updateWheelSub();
@@ -1860,6 +1898,8 @@ document.getElementById('restart-btn').addEventListener('click', () => {
   updateVetoPips();
   resetRemaining();
   resetThemesDeck();
+  resetGameState();
+  updateWheelSub();
   autoSave();
   drawWheel();
   showScreen('wheel-screen');
