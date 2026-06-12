@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "templateId": "wbc5wh",
+  "state": {
+    "currentScreen": "wheel-screen",
+    "selectedItem": null,
+    "currentTheme": null,
+    "timerSeconds": 9,
+    "currentRandomTask": "do 10 backflips",
+    "taskChecked": [
+      true,
+      true
+    ],
+    "placedItems": {
+      "Hitman Blood Money": {
+        "tier": 0,
+        "theme": "How much it reminds me of that one time I threw my friends rubber eraser out of a driving shool bus window"
+      },
+      "Last Stand": {
+        "tier": 4,
+        "theme": "do i think jerma would like this game"
+      }
+    },
+    "tierContents": [
+      [
+        "Hitman Blood Money"
+      ],
+      [],
+      [],
+      [],
+      [
+        "Last Stand"
+      ],
+      []
+    ],
+    "spinCount": 2,
+    "vetosRemaining": 0,
+    "remaining": [
+      "Creatures Village",
+      "Silverfall",
+      "NFS Most Wanted",
+      "Neighbours from Hell",
+      "Sudeki",
+      "Kao the Kangaroo",
+      "Harvester",
+      "PoP Sands of Time",
+      "Star Wars Dark Forces",
+      "Mr Jones Graveyard Shift"
+    ],
+    "themesDeck": [
+      "I wish they would make games like this nowadays",
+      "+1 tier for every frog seen, heard, or mentioned",
+      "When shitfaced",
+      "As a competitive E-Sport with a price pool of more than 200 million dollars",
+      "just play morrowind instead",
+      "As the last game on a deserted island",
+      "Will think about daily for the next 2 weeks",
+      "How important to my general life",
+      "but the protagonist keeps saying 'gyahoo'",
+      "but if every character was family guy",
+      "among us fornite",
+      "As a streaming game",
+      "Definitely from 2006",
+      "Would burn case or throw it into the sea",
+      "Subject of an 8 hour YouTube video essay",
+      "The game moves up 1 tier per minute of technical difficulties",
+      "just do whatever man i dont care anymore",
+      "For speedrunning",
+      "When zonked",
+      "Gambling",
+      "Played on a Pentium 8 using a CRT monitor at 12 fps",
+      "After playing for 48 hours straight",
+      "Bargain Bin Game",
+      "My actual enjoyment of the video game (but tiers are reverse)",
+      "gurf",
+      "At 5:45 before work",
+      "Better or worse than as a kid"
+    ]
+  }
+}

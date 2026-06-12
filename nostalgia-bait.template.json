@@ -1,0 +1,66 @@
+{
+  "name": "Nostalgia Bait",
+  "maxRounds": 0,
+  "maxVetoes": 3,
+  "items": [
+    "Sudeki",
+    "Neighbours from Hell",
+    "Kao the Kangaroo",
+    "Mr Jones Graveyard Shift",
+    "Creatures Village",
+    "PoP Sands of Time",
+    "Hitman Blood Money",
+    "Last Stand",
+    "Harvester",
+    "NFS Most Wanted",
+    "Silverfall",
+    "Star Wars Dark Forces"
+  ],
+  "themes": [
+    "At 5:45 before work",
+    "For speedrunning",
+    "When zonked",
+    "When shitfaced",
+    "As the last game on a deserted island",
+    "Played on a Pentium 8 using a CRT monitor at 12 fps",
+    "As a competitive E-Sport with a price pool of more than 200 million dollars",
+    "After playing for 48 hours straight",
+    "Subject of an 8 hour YouTube video essay",
+    "Gambling",
+    "How much it reminds me of that one time I threw my friends rubber eraser out of a driving shool bus window",
+    "My actual enjoyment of the video game (but tiers are reverse)",
+    "but if every character was family guy",
+    "As a streaming game",
+    "Definitely from 2006",
+    "Better or worse than as a kid",
+    "I wish they would make games like this nowadays",
+    "How important to my general life",
+    "Will think about daily for the next 2 weeks",
+    "just do whatever man i dont care anymore",
+    "The game moves up 1 tier per minute of technical difficulties",
+    "Would burn case or throw it into the sea",
+    "Bargain Bin Game",
+    "but the protagonist keeps saying 'gyahoo'",
+    "do i think jerma would like this game",
+    "among us fornite",
+    "just play morrowind instead",
+    "gurf",
+    "+1 tier for every frog seen, heard, or mentioned"
+  ],
+  "tiers": [
+    { "label": "S", "color": "#E8564A" },
+    { "label": "A", "color": "#F0943A" },
+    { "label": "B", "color": "#F5C842" },
+    { "label": "C", "color": "#5cb85c" },
+    { "label": "D", "color": "#4E9BDB" },
+    { "label": "F", "color": "#9B6EE0" }
+  ],
+  "tasks": [
+    "Play for at least 1 hour"
+  ],
+  "tasksRandom": [
+    "do 10 backflips",
+    "play an additional hour",
+    "make TTS cost a single point while playing"
+  ]
+}
